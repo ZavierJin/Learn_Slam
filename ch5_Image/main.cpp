@@ -35,7 +35,7 @@ void joinMap()
 
         double data[7] = {0};
         for (auto& d:data)
-            fin >> d;   // ????
+            fin >> d;   // read camera pose to data array
         Eigen::Quaterniond q(data[6], data[3], data[4], data[5]);
         Eigen::Isometry3d T(q);
         T.pretranslate(Eigen::Vector3d(data[0], data[1], data[2]));
@@ -75,9 +75,9 @@ void joinMap()
                 point_data.x = point_world[0];
                 point_data.y = point_world[1];
                 point_data.z = point_world[2];
-                point_data.b = color.data[v * color.step + u * color.channels()];
+                point_data.b = color.data[v * color.step + u * color.channels()];   // ???
                 point_data.g = color.data[v * color.step + u * color.channels() + 1];
-                point_data.b = color.data[v * color.step + u * color.channels() + 2];
+                point_data.r = color.data[v * color.step + u * color.channels() + 2];
                 point_cloud -> points.push_back(point_data);
             }
     }
@@ -99,7 +99,7 @@ void imageBasics()
         return;
     }
 
-    // input basic info
+    // print image basic info
     std::cout << "width: " << image.cols << ", height: "
         << image.rows << ", channels: " << image.channels() << std::endl;
     cv::imshow("image", image);
@@ -112,12 +112,12 @@ void imageBasics()
     }
 
     // access image element
-    // use std::chrono to time
+    // use std::chrono to timing
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     for (size_t y = 0; y < image.rows; ++y){
         for (size_t x = 0; x < image.cols; ++x){
             // use cv::Mat::ptr to get row pointer
-            unsigned char* row_ptr = image.ptr<unsigned char>(y);//image.ptr<unsigned char>(y);
+            unsigned char* row_ptr = image.ptr<unsigned char>(y);   //image.ptr<unsigned char>(y);
             unsigned char* data_ptr = &row_ptr[x * image.channels()];
             // print every channel
             for (int c = 0; c != image.channels(); ++c){
