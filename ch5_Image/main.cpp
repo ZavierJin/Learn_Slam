@@ -1,7 +1,7 @@
 #include <iostream>
 #include <chrono> // timing
 #include <fstream>
-#include <boost/format.hpp>
+#include <boost/format.hpp> // format string
 
 #include <opencv2/core/core.hpp> // version 2 ??
 #include <opencv2/highgui/highgui.hpp>
@@ -12,10 +12,81 @@
 
 #define IMAGE_PATH "ubuntu.png"
 //#define IMAGE_PATH "/home/zavier/cpp_code/test1/ubuntu.png"
+#define IMAGE_NUM 5
+#define POSE_PATH "pose.txt"
+#define CLOUD_SAVE_PATH "map.pcd"
+
 
 void joinMap()
 {
+    std::vector<cv::Mat> color_img, depth_img;
+    std::vector<Eigen::Isometry3d> cam_pose; // camera pose
 
+    std::ifstream fin(POSE_PATH);
+    if (!fin){
+        std::cerr << "Pose path error!" << std::endl;
+        return;
+    }
+
+    for (int i = 0; i < IMAGE_NUM; ++i){
+        boost::format fmt("./%s/%d.%s");     // image file format
+        color_img.push_back(cv::imread((fmt%"color"%(i+1)%"png").str()));
+        depth_img.push_back(cv::imread((fmt%"depth"%(i+1)%"pgm").str(), -1));
+
+        double data[7] = {0};
+        for (auto& d:data)
+            fin >> d;   // ????
+        Eigen::Quaterniond q(data[6], data[3], data[4], data[5]);
+        Eigen::Isometry3d T(q);
+        T.pretranslate(Eigen::Vector3d(data[0], data[1], data[2]));
+        cam_pose.push_back(T);
+    }
+
+    // camera instinct parameter
+    double cx = 325.5;
+    double cy = 253.5;
+    double fx = 518.0;
+    double fy = 519.0;
+    double depth_scale = 1000.0;
+
+    std::cout << "Start joint point cloud ..." << std::endl;
+    // define point cloud data format, use XYZRGB
+    typedef pcl::PointXYZRGB PointT;
+    typedef pcl::PointCloud<PointT> PointCloud;
+
+    // create a new point cloud
+    PointCloud::Ptr point_cloud(new PointCloud);
+    for (int i = 0; i < IMAGE_NUM; ++i){
+        std::cout << "Start translate image ..." << std::endl;
+        cv::Mat color = color_img[i];
+        cv::Mat depth = depth_img[i];
+        Eigen::Isometry3d T = cam_pose[i];
+        for (int v = 0; v < color.rows; ++v)
+            for (int u = 0; u < color.cols; ++u){
+                unsigned int d = depth.ptr<unsigned short>(v)[u];   // depth value
+                if (d == 0)     // this point is not measured
+                    continue;
+                Eigen::Vector3d point_img;  // image coordinate system
+                point_img[2] = double(d) / depth_scale;
+                point_img[0] = (u - cx) * point_img[2] / fx;
+                point_img[1] = (v - cy) * point_img[2] / fy;
+                Eigen::Vector3d point_world = T * point_img;    // world coordinate system
+                PointT point_data;
+                point_data.x = point_world[0];
+                point_data.y = point_world[1];
+                point_data.z = point_world[2];
+                point_data.b = color.data[v * color.step + u * color.channels()];
+                point_data.g = color.data[v * color.step + u * color.channels() + 1];
+                point_data.b = color.data[v * color.step + u * color.channels() + 2];
+                point_cloud -> points.push_back(point_data);
+            }
+    }
+    point_cloud -> is_dense = false;
+    std::cout << "Point cloud count: " << point_cloud->size() << std::endl;
+    pcl::io::savePCDFileBinary(CLOUD_SAVE_PATH, *point_cloud);
+
+    // to view the point cloud
+    // pcl_viewer map.pcd
 }
 
 void imageBasics()
@@ -78,7 +149,8 @@ void imageBasics()
 
 int main(int argc, char** argv)
 {
-    imageBasics();
+//    imageBasics();
+    joinMap();
     return 0;
 }
 
