@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_executable(test1 main.cpp)
 
+# Eigen
+include_directories("/usr/include/eigen3")
+
 # OpenCV
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
@@ -13,11 +16,21 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(Ceres REQUIRED)
 include_directories(${CERES_INCLUDE_DIRS})
 
-# matplotlib
-find_package(Python2 COMPONENTS Development NumPy) # python
-include_directories(${PYTHON_INCLUDE_DIRS}) # another way
+# g2o
+list(APPEND CMAKE_MODULE_PATH /home/zavier/Software/g2o/cmake_modules)
+find_package(G2O REQUIRED)
+include_directories(${G2O_INCLUDE_DIRS})
+
+# matplotlib cpp version
+find_package(Python2 COMPONENTS Development NumPy)  # python
+include_directories(${PYTHON_INCLUDE_DIRS})         # another way
 # target_include_directories(myproject PRIVATE ${Python2_INCLUDE_DIRS} ${Python2_NumPy_INCLUDE_DIRS})
 include_directories("/home/zavier/Software/matplotlib-cpp/")
 
 # link lib
-target_link_libraries(test1 ${OpenCV_LIBS} ${CERES_LIBRARIES} Python2::Python Python2::NumPy)
+target_link_libraries(test1
+    ${OpenCV_LIBS}
+    ${CERES_LIBRARIES}
+    g2o_core g2o_stuff
+    Python2::Python Python2::NumPy
+)

@@ -3,4 +3,4 @@
 - CPP project compilation
 - Eigen, matrix computation
 - OpenCV & PCL, image processing and point cloud operation
-- Ceres, optimization 
+- Ceres & g2o, optimization 
