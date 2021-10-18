@@ -24,7 +24,13 @@ void featureMatch(const cv::Mat& img_1, const cv::Mat& img_2,
 void poseEstimate2d2d(std::vector<cv::KeyPoint> keypoint_1,
                       std::vector<cv::KeyPoint> keypoint_2,
                       const std::vector<cv::DMatch>& matches,
-                      cv::Mat& R, cv::Mat& t);
+                      cv::Mat& R, cv::Mat& t, const cv::Mat& K);
+
+void triangulation(const std::vector<cv::KeyPoint>& keypoint_1,
+                   const std::vector<cv::KeyPoint>& keypoint_2,
+                   const std::vector<cv::DMatch>& matches,
+                   const cv::Mat& R, const cv::Mat& t,
+                   const cv::Mat& K, std::vector<cv::Point3d>& points);
 
 cv::Point2d pixel2cam(const cv::Point2d& p, const cv::Mat& K);
 

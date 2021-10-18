@@ -6,15 +6,12 @@
 void poseEstimate2d2d(std::vector<cv::KeyPoint> keypoint_1,
                       std::vector<cv::KeyPoint> keypoint_2,
                       const std::vector<cv::DMatch>& matches,
-                      cv::Mat& R, cv::Mat& t)
+                      cv::Mat& R, cv::Mat& t, const cv::Mat& K)
 {
-    //-- Set camera internal parameters, TUM Freiburg2
-    cv::Mat K = (cv::Mat_<double>(3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
-
     //-- Convert the matching point to the form of vector<Point2f>
     std::vector<cv::Point2f> points1;
     std::vector<cv::Point2f> points2;
-    for (auto & match : matches) {
+    for (auto& match : matches) {
         points1.push_back(keypoint_1[match.queryIdx].pt);
         points2.push_back(keypoint_2[match.trainIdx].pt);
     }
@@ -25,8 +22,10 @@ void poseEstimate2d2d(std::vector<cv::KeyPoint> keypoint_1,
     std::cout << "Fundamental matrix: " << std::endl << fundamental_matrix << std::endl;
 
     //-- Compute essential matrix
-    cv::Point2d principal_point(325.1, 249.7);	// Camera optical center, tum dataset calibration value
-    double focal_length = 521;			// Camera focal length, tum dataset calibration value
+    // Camera optical center, tum dataset calibration value
+    cv::Point2d principal_point(K.at<double>(0, 2), K.at<double>(1, 2));
+    // Camera focal length, tum dataset calibration value
+    double focal_length = K.at<double>(1, 1);
     cv::Mat essential_matrix;
     essential_matrix = findEssentialMat(points1, points2, focal_length, principal_point);
     std::cout << "Essential matrix: " << std::endl << essential_matrix << std::endl;

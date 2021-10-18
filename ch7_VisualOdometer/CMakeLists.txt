@@ -3,7 +3,7 @@ project(test1)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(test1 main.cpp featureMatch.cpp visual_odometer.h poseEstimate2d2d.cpp utils.cpp)
+add_executable(test1 main.cpp featureMatch.cpp visual_odometer.h poseEstimate2d2d.cpp utils.cpp triangulation.cpp)
 
 # Eigen
 include_directories("/usr/include/eigen3")

@@ -4,7 +4,6 @@
 #include "visual_odometer.h"
 
 
-
 void featureMatch(const cv::Mat& img_1, const cv::Mat& img_2,
                   std::vector<cv::KeyPoint>& keypoint_1,
                   std::vector<cv::KeyPoint>& keypoint_2,
@@ -17,15 +16,15 @@ void featureMatch(const cv::Mat& img_1, const cv::Mat& img_2,
     // use this if you are in OpenCV2
     // Ptr<FeatureDetector> detector = FeatureDetector::create ( "ORB" );
     // Ptr<DescriptorExtractor> descriptor = DescriptorExtractor::create ( "ORB" );
-    cv::Ptr<cv::DescriptorMatcher> matcher  = cv::DescriptorMatcher::create("BruteForce-Hamming");
+    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
 
     //-- Detect Oriented FAST corner position
-    detector->detect (img_1,keypoint_1);
-    detector->detect (img_2,keypoint_2);
+    detector->detect(img_1,keypoint_1);
+    detector->detect(img_2,keypoint_2);
 
     //-- Compute BRIEF descriptor based on keypoint
-    descriptor->compute (img_1, keypoint_1, descriptor_1);
-    descriptor->compute (img_2, keypoint_2, descriptor_2);
+    descriptor->compute(img_1, keypoint_1, descriptor_1);
+    descriptor->compute(img_2, keypoint_2, descriptor_2);
 
     //-- Match the BRIEF descriptors in the two images, using Hamming distance
     std::vector<cv::DMatch> tmp_match;
