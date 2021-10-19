@@ -6,8 +6,8 @@
 void triangulation(const std::vector<cv::KeyPoint>& keypoint_1,
                    const std::vector<cv::KeyPoint>& keypoint_2,
                    const std::vector<cv::DMatch>& matches,
-                   const cv::Mat& R, const cv::Mat& t,
-                   const cv::Mat& K, std::vector<cv::Point3d>& points)
+                   const cv::Mat& R, const cv::Mat& t, const cv::Mat& K,
+                   std::vector<cv::Point3d>& points, bool check)
 {
     cv::Mat T1 = (cv::Mat_<float>(3, 4) <<
         1,0,0,0,
@@ -39,6 +39,26 @@ void triangulation(const std::vector<cv::KeyPoint>& keypoint_1,
             x.at<float>(2,0)
         );
         points.push_back(p);
+    }
+
+    if (check) {
+        for (int i = 0; i < matches.size(); ++i) {
+            cv::Point2d pt1_cam = pixel2cam(keypoint_1[matches[i].queryIdx].pt, K);
+            cv::Point2d pt1_cam_3d(
+                    points[i].x / points[i].z,
+                    points[i].y / points[i].z
+            );
+            std::cout << "Point in the first camera frame: " << pt1_cam << std::endl;
+            std::cout << "Point projected from 3D " << pt1_cam_3d << ", d=" << points[i].z << std::endl;
+
+            // second image
+            cv::Point2f pt2_cam = pixel2cam(keypoint_2[matches[i].trainIdx].pt, K);
+            cv::Mat pt2_trans = R * (cv::Mat_<double>(3, 1) << points[i].x, points[i].y, points[i].z) + t;
+            pt2_trans /= pt2_trans.at<double>(2, 0);
+            std::cout << "Point in the second camera frame: " << pt2_cam << std::endl;
+            std::cout << "Point reprojected from second frame: " << pt2_trans.t() << std::endl;
+            std::cout << std::endl;
+        }
     }
 }
 

@@ -55,7 +55,7 @@ void featureMatch(const cv::Mat& img_1, const cv::Mat& img_2,
     }
 }
 
-void featureExtraction()
+__attribute__((unused)) void featureExtraction()
 {
     cv::Mat img_1 = cv::imread(IMG_PATH_1, CV_LOAD_IMAGE_COLOR);
     cv::Mat img_2 = cv::imread(IMG_PATH_2, CV_LOAD_IMAGE_COLOR);

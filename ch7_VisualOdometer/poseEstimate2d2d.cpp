@@ -6,7 +6,8 @@
 void poseEstimate2d2d(std::vector<cv::KeyPoint> keypoint_1,
                       std::vector<cv::KeyPoint> keypoint_2,
                       const std::vector<cv::DMatch>& matches,
-                      cv::Mat& R, cv::Mat& t, const cv::Mat& K)
+                      cv::Mat& R, cv::Mat& t, const cv::Mat& K,
+                      bool check)
 {
     //-- Convert the matching point to the form of vector<Point2f>
     std::vector<cv::Point2f> points1;
@@ -39,4 +40,24 @@ void poseEstimate2d2d(std::vector<cv::KeyPoint> keypoint_1,
     recoverPose(essential_matrix, points1, points2, R, t, focal_length, principal_point);
     std::cout << "R: " << std::endl << R << std::endl;
     std::cout << "t: " << std::endl << t << std::endl;
+
+    if (check) {
+        //-- Verify E = t^R*scale
+        cv::Mat t_x = (cv::Mat_<double>(3, 3) <<
+                                              0, -t.at<double>(2, 0), t.at<double>(1, 0),
+                t.at<double>(2, 0), 0, -t.at<double>(0, 0),
+                -t.at<double>(1, 0), t.at<double>(0, 0), 0);
+
+        std::cout << "t^R=" << std::endl << t_x * R << std::endl;
+
+        //-- Verify polar constraints
+        for (cv::DMatch m: matches) {
+            cv::Point2d pt1 = pixel2cam(keypoint_1[m.queryIdx].pt, K);
+            cv::Mat y1 = (cv::Mat_<double>(3, 1) << pt1.x, pt1.y, 1);
+            cv::Point2d pt2 = pixel2cam(keypoint_2[m.trainIdx].pt, K);
+            cv::Mat y2 = (cv::Mat_<double>(3, 1) << pt2.x, pt2.y, 1);
+            cv::Mat d = y2.t() * t_x * R * y1;
+            std::cout << "Polar constraint: " << d << std::endl;
+        }
+    }
 }
