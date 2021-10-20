@@ -14,20 +14,20 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <Eigen/SVD>
 #include <g2o/core/base_vertex.h>
 #include <g2o/core/base_unary_edge.h>
 #include <g2o/core/block_solver.h>
 #include <g2o/core/optimization_algorithm_levenberg.h>
-#include <g2o/solvers/csparse/linear_solver_csparse.h>
-#include <g2o/types/sba/types_six_dof_expmap.h>
 #include <g2o/core/optimization_algorithm_gauss_newton.h>
-#include <g2o/core/optimization_algorithm_dogleg.h>
-#include <g2o/solvers/dense/linear_solver_dense.h>
-#include <g2o/types/sba/types_sba.h>
+#include <g2o/solvers/csparse/linear_solver_csparse.h>
+#include <g2o/solvers/eigen/linear_solver_eigen.h>
+#include <g2o/types/sba/types_six_dof_expmap.h>
 
 #define IMG_PATH_1 "1.png"
 #define IMG_PATH_2 "2.png"
 #define DEPTH_IMG_PATH_1 "1_depth.png"
+#define DEPTH_IMG_PATH_2 "2_depth.png"
 
 __attribute__((unused)) void featureExtraction();
 
@@ -53,6 +53,14 @@ void poseEstimate3d2d(std::vector<cv::KeyPoint> keypoint_1,
                       const std::vector<cv::DMatch>& matches,
                       cv::Mat& R, cv::Mat& t, const cv::Mat& K,
                       const cv::Mat& depth_img_1, bool check);
+
+void poseEstimate3d3d(std::vector<cv::KeyPoint> keypoint_1,
+                      std::vector<cv::KeyPoint> keypoint_2,
+                      const std::vector<cv::DMatch>& matches,
+                      cv::Mat& R, cv::Mat& t, const cv::Mat& K,
+                      const cv::Mat& depth_img_1,
+                      const cv::Mat& depth_img_2,
+                      bool check);
 
 cv::Point2d pixel2cam(const cv::Point2d& p, const cv::Mat& K);
 

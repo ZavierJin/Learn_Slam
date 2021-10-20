@@ -6,8 +6,7 @@ set(CMAKE_CXX_STANDARD 14)
 #LINK_DIRECTORIES("/usr/local/lib")
 
 
-add_executable(
-    test1
+add_executable(test1
     main.cpp
     featureMatch.cpp
     visual_odometer.h
@@ -15,6 +14,7 @@ add_executable(
     utils.cpp
     triangulation.cpp
     poseEstimate3d2d.cpp
+    poseEstimate3d3d.cpp
 )
 
 list(APPEND CMAKE_MODULE_PATH /home/zavier/Software/g2o/cmake_modules)
@@ -57,10 +57,9 @@ include_directories(
 
 
 # link lib
-target_link_libraries(
-    test1
+target_link_libraries(test1
     ${OpenCV_LIBS}
     ${CERES_LIBRARIES}
-    g2o_core g2o_stuff g2o_types_sba g2o_csparse_extension g2o_types_slam3d
+    g2o_core g2o_stuff g2o_types_sba g2o_csparse_extension g2o_types_slam3d cxsparse
     Python2::Python Python2::NumPy
 )

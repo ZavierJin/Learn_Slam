@@ -1,7 +1,8 @@
 //
 // Created by zavier on 10/19/21.
 //
-// Using bundle adjustment
+// Use the EPNP provided by OpenCV to solve the PNP problem,
+// then use bundle adjustment to optimize result
 //
 
 #include "visual_odometer.h"
@@ -22,8 +23,10 @@ void poseEstimate3d2d(std::vector<cv::KeyPoint> keypoint_1,
     std::vector<cv::Point2f> pts_2d;
     for (cv::DMatch m : matches) {
         ushort depth = depth_img_1.ptr<unsigned short>(int(keypoint_1[m.queryIdx].pt.y))[int(keypoint_1[m.queryIdx].pt.x)];
-        if (depth == 0)   // bad depth
+        if (depth == 0) {   // bad depth
+            std::cout << "Bad depth." << std::endl;
             continue;
+        }
         float dd = depth / 5000.0;
         cv::Point2d p1 = pixel2cam(keypoint_1[m.queryIdx].pt, K);
         pts_3d.emplace_back(p1.x*dd, p1.y*dd, dd);      // what is emplace_back??
@@ -44,13 +47,13 @@ void poseEstimate3d2d(std::vector<cv::KeyPoint> keypoint_1,
     bundleAdjustment(pts_3d, pts_2d, R, t, K);
 }
 
-void bundleAdjustment(const std::vector<cv::Point3f>& points_3d,
-                      const std::vector<cv::Point2f>& points_2d,
-                      cv::Mat& R, cv::Mat& t, const cv::Mat& K)
+static void bundleAdjustment(const std::vector<cv::Point3f>& points_3d,
+                             const std::vector<cv::Point2f>& points_2d,
+                             cv::Mat& R, cv::Mat& t, const cv::Mat& K)
 {
     // g2o initialization
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,3>> Block;  // pose: 6-dim, landmark: 3-dim
-    auto linear_solver = g2o::make_unique<g2o::LinearSolverDense<Block::PoseMatrixType>>(); // new g2o version
+    auto linear_solver = g2o::make_unique<g2o::LinearSolverCSparse<Block::PoseMatrixType>>(); // new g2o version
     auto block_solver = g2o::make_unique<Block>(std::move(linear_solver));
     auto* solver = new g2o::OptimizationAlgorithmLevenberg (std::move(block_solver));
     g2o::SparseOptimizer optimizer;     // graph model
@@ -60,18 +63,18 @@ void bundleAdjustment(const std::vector<cv::Point3f>& points_3d,
     auto* pose = new g2o::VertexSE3Expmap(); // camera pose
     Eigen::Matrix3d R_mat;
     R_mat <<
-        R.at<double> (0,0), R.at<double> (0,1), R.at<double> (0,2),
-        R.at<double> (1,0), R.at<double> (1,1), R.at<double> (1,2),
-        R.at<double> (2,0), R.at<double> (2,1), R.at<double> (2,2);
+        R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2),
+        R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2),
+        R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2);
     pose->setId(0);
     pose->setEstimate(g2o::SE3Quat(
         R_mat,
-        Eigen::Vector3d (t.at<double> (0,0), t.at<double> (1,0), t.at<double> (2,0))
+        Eigen::Vector3d(t.at<double>(0,0), t.at<double>(1,0), t.at<double>(2,0))
     ));
     optimizer.addVertex(pose);
 
     int index = 1;
-    for (const cv::Point3f& p : points_3d) {   // landmarks
+    for (const cv::Point3f& p : points_3d) {   // TODO: landmarks ???
         auto* point = new g2o::VertexPointXYZ();
         point->setId (index++);
         point->setEstimate (Eigen::Vector3d(p.x, p.y, p.z));
