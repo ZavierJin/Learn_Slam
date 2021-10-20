@@ -3,9 +3,6 @@ project(test1)
 
 set(CMAKE_CXX_STANDARD 14)
 
-#LINK_DIRECTORIES("/usr/local/lib")
-
-
 add_executable(test1
     main.cpp
     featureMatch.cpp
@@ -23,7 +20,6 @@ find_package(OpenCV REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(Python2 COMPONENTS Development NumPy)
 
-# Eigen
 include_directories(
     "/usr/include/eigen3"
     ${OpenCV_INCLUDE_DIRS}
@@ -34,27 +30,7 @@ include_directories(
     "/home/zavier/Software/matplotlib-cpp/"
 )
 
-
-#include_directories()
-#
-## Ceres
-#
-#include_directories()
-#
-## g2o
-#
-#include_directories()
-#include_directories()     # for g2o csparse
-#
-## matplotlib cpp version
-#  # python
-#include_directories()         # another way
-## target_include_directories(myproject PRIVATE ${Python2_INCLUDE_DIRS} ${Python2_NumPy_INCLUDE_DIRS})
-#include_directories()
-
 # SET(G2O_LIBS g2o_cli g2o_ext_freeglut_minimal g2o_simulator g2o_solver_slam2d_linear g2o_types_icp g2o_types_slam2d g2o_core g2o_interface g2o_solver_csparse g2o_solver_structure_only g2o_types_sba g2o_types_slam3d g2o_csparse_extension g2o_opengl_helper g2o_solver_dense g2o_stuff g2o_types_sclam2d g2o_parser g2o_solver_pcg g2o_types_data g2o_types_sim3 cxsparse )
-
-
 
 # link lib
 target_link_libraries(test1
