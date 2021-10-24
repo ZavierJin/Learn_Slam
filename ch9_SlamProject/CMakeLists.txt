@@ -39,7 +39,7 @@ set(THIRD_PARTY_LIBS
 
 ############### source and test ######################
 include_directories( ${PROJECT_SOURCE_DIR}/include )
-add_subdirectory( src )
+add_subdirectory(src)
 #add_executable(my_slam src/main.cpp)
 #target_link_libraries( my_slam
 #        ${THIRD_PARTY_LIBS}

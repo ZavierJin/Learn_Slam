@@ -4,4 +4,5 @@
 - Eigen, matrix computation
 - OpenCV & PCL, image processing and point cloud operation
 - Ceres & g2o, optimization 
-- Visual Odometer, feature matching, 2D-2D
+- Visual Odometer, feature matching, 2D-2D, 3D-2D, 3D-3D
+- Slam Project Structure

@@ -15,6 +15,7 @@
 #include <set>
 #include <unordered_map>
 #include <map>
+#include <utility>
 
 // Eigen
 #include <Eigen/Core>
@@ -29,5 +30,7 @@
 // opencv
 #include <opencv2/core/core.hpp>
 //using cv::Mat;
+
+#define CONFIG_PATH "../config/default.yaml"
 
 #endif //MY_SLAM_COMMON_INCLUDE_H

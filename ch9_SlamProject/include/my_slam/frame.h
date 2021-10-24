@@ -5,8 +5,6 @@
 #ifndef MY_SLAM_FRAME_H
 #define MY_SLAM_FRAME_H
 
-#include <utility>
-
 #include "my_slam/common_include.h"
 #include "my_slam/camera.h"
 
