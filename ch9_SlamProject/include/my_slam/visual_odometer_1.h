@@ -26,8 +26,6 @@ public:
     Frame::Ptr  ref_;       // reference frame
     Frame::Ptr  curr_;      // current frame
 
-    cv::Ptr<cv::FeatureDetector>    detector_;
-    cv::Ptr<cv::DescriptorExtractor> descriptor_;
     cv::Ptr<cv::ORB>                orb_;               // orb detector and computer
     std::vector<cv::Point3f>        pts_3d_ref_;        // 3D points in reference frame
     std::vector<cv::KeyPoint>       keypoint_curr_;     // keypoint in current frame
@@ -35,6 +33,7 @@ public:
     cv::Mat                         descriptor_curr_;   // descriptor in current frame
     cv::Mat                         descriptor_ref_;    // descriptor in reference frame
     std::vector<cv::DMatch>         feature_matches_;
+    std::vector<int>                error_depth_index;
 
     Sophus::SE3d    T_c_r_estimated_;       // the estimated pose of current frame
     int             num_inliers_;           // number of inlier features in icp

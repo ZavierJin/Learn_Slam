@@ -5,7 +5,7 @@ add_executable( my_slam
     map.cpp
     camera.cpp
     config.cpp
-    visual_odometer_1.cpp
+    visual_odometer_2.cpp
 )
 
 target_link_libraries( my_slam

@@ -12,64 +12,6 @@
 #include <algorithm>
 #include <boost/timer.hpp>
 
-void featureMatch(const cv::Mat& img_1, const cv::Mat& img_2,
-                  std::vector<cv::KeyPoint>& keypoint_1,
-                  std::vector<cv::KeyPoint>& keypoint_2
-                  )
-{
-    std::vector<cv::DMatch> matches;
-    cv::Mat descriptor_1, descriptor_2;
-    // used in OpenCV3
-    cv::Ptr<cv::FeatureDetector> detector = cv::ORB::create();
-    cv::Ptr<cv::DescriptorExtractor> descriptor = cv::ORB::create();
-    // use this if you are in OpenCV2
-    // Ptr<FeatureDetector> detector = FeatureDetector::create ( "ORB" );
-    // Ptr<DescriptorExtractor> descriptor = DescriptorExtractor::create ( "ORB" );
-    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
-
-    //-- Detect Oriented FAST corner position
-    detector->detect(img_1,keypoint_1);
-    detector->detect(img_2,keypoint_2);
-
-    //-- Compute BRIEF descriptor based on keypoint
-    descriptor->compute(img_1, keypoint_1, descriptor_1);
-    descriptor->compute(img_2, keypoint_2, descriptor_2);
-
-    //-- Match the BRIEF descriptors in the two images, using Hamming distance
-    std::vector<cv::DMatch> tmp_match;
-    //BFMatcher matcher ( NORM_HAMMING );
-    matcher->match(descriptor_1, descriptor_2, tmp_match);
-
-    //-- Filter the matching point pairs
-    double min_dist = 10000, max_dist = 0;
-    // Find out the minimum distance and maximum distance between all matches
-    // The distance between the most similar and the least similar two groups of points
-    for (int i = 0; i < descriptor_1.rows; ++i) {
-        double dist = tmp_match[i].distance;
-        if (dist < min_dist)
-            min_dist = dist;
-        if (dist > max_dist)
-            max_dist = dist;
-    }
-    std::cout << "Max dist: " << max_dist << std::endl;
-    std::cout << "Min dist: " << min_dist << std::endl;
-    // When the distance between descriptors is greater than twice the minimum distance,
-    // it is considered that the matching is wrong.
-    // But sometimes the minimum distance is very small.
-    // Set an empirical value as the lower limit.
-    double threshold = 30.0;
-    for (int i = 0; i < descriptor_1.rows; ++i) {
-        if (tmp_match[i].distance <= cv::max(2*min_dist, threshold))
-            matches.push_back(tmp_match[i]);
-    }
-    //-- Draw matching result
-    cv::Mat img_good_match;
-    cv::drawMatches(img_1, keypoint_1, img_2, keypoint_2, matches, img_good_match);
-    cv::imshow("Good Matches", img_good_match);
-    cv::waitKey(0);
-}
-
-
 
 namespace my_slam
 {
@@ -87,65 +29,54 @@ namespace my_slam
         key_frame_min_rot   = Config::get<double> ( "keyframe_rotation" );
         key_frame_min_trans = Config::get<double> ( "keyframe_translation" );
         orb_ = cv::ORB::create(num_of_features_, scale_factor_, level_pyramid_ );
-        detector_ = cv::ORB::create();
-        descriptor_ = cv::ORB::create();
     }
 
-    bool VisualOdometer::addFrame ( const Frame::Ptr& frame )
+    bool VisualOdometer::addFrame(const Frame::Ptr& frame)
     {
-        switch ( state_ )
-        {
-            case INITIALIZING:
+        switch ( state_ ) {
+        case INITIALIZING:
+            state_ = OK;
+            curr_ = ref_ = frame;
+            map_->insertKeyFrame ( frame );
+            // extract features from first frame
+            extractKeyPoints();
+            computeDescriptors();
+            // compute the 3d position of features in ref frame
+            setRef3DPoints();
+            break;
+        case OK:
+            curr_ = frame;
+            keypoint_ref_ = keypoint_curr_;
+            extractKeyPoints();
+            computeDescriptors();
+            featureMatching();
+            poseEstimationPnP();
+            checkEstimatedPose();
+            if (  true ) // a good estimation
             {
-                state_ = OK;
-                curr_ = ref_ = frame;
-                map_->insertKeyFrame ( frame );
-                // extract features from first frame 
-                extractKeyPoints();
-                computeDescriptors();
-                // compute the 3d position of features in ref frame 
+                curr_->T_c_w_ = T_c_r_estimated_ * ref_->T_c_w_;  // T_c_w = T_c_r*T_r_w
+                ref_ = curr_;
                 setRef3DPoints();
-                break;
-            }
-            case OK:
-            {
-                curr_ = frame;
-                keypoint_ref_ = keypoint_curr_;
-                extractKeyPoints();
-                computeDescriptors();
-//                featureMatch(ref_->color_, curr_->color_, keypoint_ref_, keypoint_curr_);
-                featureMatching();
-                poseEstimationPnP();
-                checkEstimatedPose();
-                if (  true ) // a good estimation
+                num_lost_ = 0;
+                if ( checkKeyFrame() == true ) // is a key-frame
                 {
-                    curr_->T_c_w_ = T_c_r_estimated_ * ref_->T_c_w_;  // T_c_w = T_c_r*T_r_w 
-                    ref_ = curr_;
-                    setRef3DPoints();
-                    num_lost_ = 0;
-                    if ( checkKeyFrame() == true ) // is a key-frame
-                    {
-                        addKeyFrame();
-                    }
+                    addKeyFrame();
                 }
-                else // bad estimation due to various reasons
-                {
-                    num_lost_++;
-                    if ( num_lost_ > max_num_lost_ )
-                    {
-                        state_ = LOST;
-                    }
-                    return false;
-                }
-                break;
             }
-            case LOST:
+            else // bad estimation due to various reasons
             {
-                std::cout<<"vo has lost."<<std::endl;
-                break;
+                num_lost_++;
+                if ( num_lost_ > max_num_lost_ )
+                {
+                    state_ = LOST;
+                }
+                return false;
             }
+            break;
+        case LOST:
+            std::cout<<"vo has lost."<<std::endl;
+            break;
         }
-
         return true;
     }
 
@@ -220,7 +151,7 @@ namespace my_slam
         pts_3d_ref_.clear();
         descriptor_ref_ = cv::Mat();
         int count = 0;
-        for ( size_t i=0; i<keypoint_curr_.size(); i++ )
+        for (size_t i = 0; i < keypoint_curr_.size(); i++)
         {
             descriptor_ref_.push_back(descriptor_curr_.row(i));
             double d = ref_->findDepth(keypoint_curr_[i]);
@@ -246,8 +177,11 @@ namespace my_slam
 
         for ( cv::DMatch m:feature_matches_ )
         {
-            pts3d.push_back( pts_3d_ref_[m.queryIdx] );
-            pts2d.push_back( keypoint_curr_[m.trainIdx].pt );
+            double d = ref_->findDepth(keypoint_curr_[m.queryIdx]);
+            if (d > 0) {
+                pts3d.push_back(pts_3d_ref_[m.queryIdx]);
+                pts2d.push_back(keypoint_curr_[m.trainIdx].pt);
+            }
         }
 
         cv::Mat K = ( cv::Mat_<double>(3,3)<<
@@ -256,8 +190,8 @@ namespace my_slam
                 0,0,1
         );
         cv::Mat rvec, tvec, inliers;
-//        cv::solvePnPRansac(pts3d, pts2d, K, cv::Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers );
-        cv::solvePnP(pts3d, pts2d, K, cv::Mat(), rvec, tvec, false);
+        cv::solvePnPRansac(pts3d, pts2d, K, cv::Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers );
+//        cv::solvePnP(pts3d, pts2d, K, cv::Mat(), rvec, tvec, false);
 //        num_inliers_ = inliers.rows;
 //        std::cout<<"pnp inliers: "<<num_inliers_<<std::endl;
         cv::Mat R_mat_cv;
