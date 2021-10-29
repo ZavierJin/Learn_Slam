@@ -35,6 +35,7 @@ set(THIRD_PARTY_LIBS
     Sophus::Sophus
     g2o_core g2o_stuff g2o_types_sba g2o_csparse_extension g2o_types_slam3d cxsparse
     Python2::Python Python2::NumPy
+    glog
 )
 
 ############### source and test ######################

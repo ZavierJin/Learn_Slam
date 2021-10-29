@@ -7,6 +7,7 @@
 
 #include "my_slam/common_include.h"
 #include "my_slam/map.h"
+#include "my_slam/g2o_type.h"
 #include <opencv2/features2d/features2d.hpp>
 
 namespace my_slam
@@ -58,12 +59,14 @@ public:
 
 protected:
     // inner operation
+    void stateUpdate();
     void extractKeyPoints();
     void computeDescriptors();
     void featureMatching();
     void poseEstimationPnP();
-    void setRef3DPoints();
-    void stateUpdate();
+    void bundleAdjustment(const std::vector<cv::Point3f>& points_3d,
+                          const std::vector<cv::Point2f>& points_2d,
+                          g2o::VertexSE3Expmap* pose, cv::Mat& inliers);
 
     void addKeyFrame();
     bool checkEstimatedPose();

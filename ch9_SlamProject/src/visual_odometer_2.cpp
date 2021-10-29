@@ -160,19 +160,59 @@ void VisualOdometer::poseEstimationPnP()
 
     cv::Mat R_mat_cv;
     Eigen::Matrix3d R_mat;
+    Eigen::Vector3d t;
     cv::Rodrigues(R_vec, R_mat_cv);
     cv::cv2eigen(R_mat_cv, R_mat);
+    t = Eigen::Vector3d(t_vec.at<double>(0,0), t_vec.at<double>(1,0), t_vec.at<double>(2,0));
 //        std::cout << "R_vec: " << std::endl << R_vec << std::endl;
 //        std::cout << "CV-R: " << std::endl << R_mat_cv << std::endl;
 //    std::cout << "Eigen-R: " << std::endl << R_mat << std::endl;
 //    std::cout << "t_vec: " << std::endl << t_vec << std::endl;
+    T_c_r_estimated_ = Sophus::SE3d(R_mat, t);
+
+    std::cout << "Calling bundle adjustment ... " << std::endl;
+    auto* pose = new g2o::VertexSE3Expmap; // camera pose
+    bundleAdjustment(pts_3d, pts_2d, pose, inliers);
+
+
     T_c_r_estimated_ = Sophus::SE3d(
-            R_mat,
-            // Sophus::SO3d(rvec.at<double>(0,0), rvec.at<double>(1,0), rvec.at<double>(2,0)),
-            Eigen::Vector3d( t_vec.at<double>(0,0), t_vec.at<double>(1,0), t_vec.at<double>(2,0))
+            Eigen::Isometry3d(pose->estimate()).rotation(),
+            Eigen::Isometry3d(pose->estimate()).translation()
     );
-//        std::cout << "Calling bundle adjustment ... " << std::endl;
-//        bundleAdjustment(pts_3d, pts_2d, R, t, K);
+}
+
+void VisualOdometer::bundleAdjustment(const std::vector<cv::Point3f>& points_3d,
+                                      const std::vector<cv::Point2f>& points_2d,
+                                      g2o::VertexSE3Expmap* pose, cv::Mat& inliers)
+{
+    // g2o initialization
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,2>> Block;  // pose: 6-dim, landmark: 2-dim
+    auto linear_solver = g2o::make_unique<g2o::LinearSolverDense<Block::PoseMatrixType>>(); // new g2o version
+    auto block_solver = g2o::make_unique<Block>(std::move(linear_solver));
+    auto* solver = new g2o::OptimizationAlgorithmLevenberg (std::move(block_solver));
+    g2o::SparseOptimizer optimizer;     // graph model
+    optimizer.setAlgorithm(solver);
+
+    pose->setId(0);
+    pose->setEstimate(g2o::SE3Quat(T_c_r_estimated_.rotationMatrix(), T_c_r_estimated_.translation()));
+    optimizer.addVertex(pose);
+
+    // edges
+    for (int i = 0; i < inliers.rows; ++i) {
+        int index = inliers.at<int>(i,0);
+        // 3D -> 2D projection
+        auto * edge = new EdgeProjectXYZ2UVPoseOnly();
+        edge->setId(i);
+        edge->setVertex(0, pose);
+        edge->camera_ = curr_->camera_.get();
+        edge->point_ = Eigen::Vector3d(points_3d[index].x, points_3d[index].y, points_3d[index].z );
+        edge->setMeasurement( Eigen::Vector2d(points_2d[index].x, points_2d[index].y) );
+        edge->setInformation(Eigen::Matrix2d::Identity());
+        optimizer.addEdge(edge);
+    }
+
+    optimizer.initializeOptimization();
+    optimizer.optimize(10);
 }
 
 bool VisualOdometer::checkEstimatedPose()

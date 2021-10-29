@@ -9,7 +9,7 @@ Slam and cpp practice repository
 - OpenCV & PCL, image processing and point cloud operation
 - Ceres & g2o, optimization 
 - Visual Odometer, feature matching, 2D-2D, 3D-2D, 3D-3D
-- Slam Project Structure, two frame visual odometer
+- Slam Front Project Structure, two frame visual odometer
 
 ## Reference
 

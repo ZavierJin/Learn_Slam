@@ -6,3 +6,4 @@
 - In ch9, i don't know why i can't use `.so` type to create target. Use `.a` instead. Change `add_library` into `add_executable` in `src/CMakeLists.txt`. 
 - New version Sophus  changes `rotation_matrix()` into `matrix()`.
 - The tum dataset encountered a python version problem using `associate.py `, https://blog.csdn.net/u012796629/article/details/87932936
+- add glog to target_link_libraries

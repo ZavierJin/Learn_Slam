@@ -6,6 +6,7 @@ add_executable( my_slam
     camera.cpp
     config.cpp
     visual_odometer_2.cpp
+    g2o_type.cpp
 )
 
 target_link_libraries( my_slam

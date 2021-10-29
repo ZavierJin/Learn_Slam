@@ -76,9 +76,9 @@ void twoFrameVisualOdometer()
         // Show the map and the camera pose
         cv::Affine3d M(
             cv::Affine3d::Mat3(
-                Tcw.matrix()(0, 0), Tcw.matrix()(0, 1), Tcw.matrix()(0, 2),
-                Tcw.matrix()(1, 0), Tcw.matrix()(1, 1), Tcw.matrix()(1, 2),
-                Tcw.matrix()(2, 0), Tcw.matrix()(2, 1), Tcw.matrix()(2, 2)
+                Tcw.rotationMatrix()(0, 0), Tcw.rotationMatrix()(0, 1), Tcw.rotationMatrix()(0, 2),
+                Tcw.rotationMatrix()(1, 0), Tcw.rotationMatrix()(1, 1), Tcw.rotationMatrix()(1, 2),
+                Tcw.rotationMatrix()(2, 0), Tcw.rotationMatrix()(2, 1), Tcw.rotationMatrix()(2, 2)
             ),
             cv::Affine3d::Vec3(
                 Tcw.translation()(0, 0), Tcw.translation()(1, 0), Tcw.translation()(2, 0)
