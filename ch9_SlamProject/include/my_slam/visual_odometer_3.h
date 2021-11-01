@@ -1,11 +1,13 @@
 //
-// Created by zavier on 10/27/21.
+// Created by zavier on 11/1/21.
 //
 
-// Two frame visual odometer
+// visual odometer with a local map
+// the result is not good
+// why??
 
-#ifndef MY_SLAM_VISUAL_ODOMETER_2_H
-#define MY_SLAM_VISUAL_ODOMETER_2_H
+#ifndef MY_SLAM_VISUAL_ODOMETER_3_H
+#define MY_SLAM_VISUAL_ODOMETER_3_H
 
 #include "my_slam/common_include.h"
 #include "my_slam/map.h"
@@ -14,7 +16,6 @@
 
 namespace my_slam
 {
-
 class VisualOdometer
 {
 public:
@@ -32,12 +33,16 @@ public:
 
     cv::Mat                         K_;                 // camera instinct matrix
     cv::Ptr<cv::ORB>                orb_;               // orb detector and computer
-    std::vector<cv::Point3f>        pts_3d_ref_;        // 3D points in reference frame, never used
+//    std::vector<cv::Point3f>        pts_3d_ref_;        // 3D points in reference frame, never used
     std::vector<cv::KeyPoint>       keypoint_curr_;     // keypoint in current frame
     std::vector<cv::KeyPoint>       keypoint_ref_;      // keypoint in reference frame, new add
     cv::Mat                         descriptor_curr_;   // descriptor in current frame
     cv::Mat                         descriptor_ref_;    // descriptor in reference frame
-    std::vector<cv::DMatch>         feature_matches_;
+//    std::vector<cv::DMatch>         feature_matches_;
+
+    cv::FlannBasedMatcher           matcher_flann_;     // flann matcher
+    std::vector<MapPoint::Ptr>      match_3dpts_;       // matched 3d points
+    std::vector<int>                match_2dkp_index_;  // matched 2d pixels (index of kp_curr)
 
     Sophus::SE3d    T_c_r_estimated_;       // the estimated pose of current frame
     int             num_inliers_;           // number of inlier features in icp
@@ -52,6 +57,7 @@ public:
 
     double  key_frame_min_rot;      // minimal rotation of two key-frames
     double  key_frame_min_trans;    // minimal translation of two key-frames
+    double  map_point_erase_ratio_; // remove map point ratio
 
 public:
     VisualOdometer();
@@ -73,11 +79,16 @@ protected:
     void addKeyFrame();
     bool checkEstimatedPose();
     bool checkKeyFrame();
+
+    void addMapPoints();
+    void optimizeMap();
+    static double getViewAngle(const Frame::Ptr& frame, const MapPoint::Ptr& point);
 };
 
 }
 
-#endif //MY_SLAM_VISUAL_ODOMETER_2_H
+#endif //MY_SLAM_VISUAL_ODOMETER_3_H
+
 
 
 

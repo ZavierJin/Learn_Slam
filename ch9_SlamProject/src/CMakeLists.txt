@@ -5,7 +5,7 @@ add_executable( my_slam
     map.cpp
     camera.cpp
     config.cpp
-    visual_odometer_2.cpp
+    visual_odometer_3.cpp
     g2o_type.cpp
 )
 
