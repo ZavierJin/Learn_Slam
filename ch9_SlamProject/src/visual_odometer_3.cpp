@@ -35,6 +35,7 @@ VisualOdometer::VisualOdometer():
 
 bool VisualOdometer::addFrame(const Frame::Ptr& frame)
 {
+    std::cout << "----------------------------------" << std::endl;
     switch (state_) {
         case INITIALIZING:
             state_ = TRACKING;
@@ -58,8 +59,8 @@ bool VisualOdometer::addFrame(const Frame::Ptr& frame)
             poseEstimationPnP();
             if (checkEstimatedPose()) {     // a good estimation
                 std::cout << "A good estimation." << std::endl;
-                curr_->T_c_w_ = T_c_r_estimated_;
-//                optimizeMap();    // TODO: Optimize map size will cause an error
+                curr_->T_c_w_ = T_c_w_estimated_;
+//                optimizeMap();    // TODO: Optimize map size will cause an error, iter_ptr++ become null_ptr
                 num_lost_ = 0;
                 if (checkKeyFrame()) // is a key-frame
                     addKeyFrame();
@@ -88,25 +89,14 @@ void VisualOdometer::computeDescriptors()
     orb_->compute(curr_->color_, keypoint_curr_, descriptor_curr_);
 }
 
-void VisualOdometer::stateUpdate()
-{
-    ref_ = curr_;
-    keypoint_ref_.clear();
-    keypoint_ref_ = keypoint_curr_;
-    descriptor_ref_ = cv::Mat();        // Reset descriptor!!!!
-    for (size_t i = 0; i < keypoint_curr_.size(); ++i) {
-        descriptor_ref_.push_back(descriptor_curr_.row(int(i)));
-    }
-}
-
 void VisualOdometer::featureMatching()
 {
     std::vector<cv::DMatch> matches;
     // select the candidates in map
     cv::Mat desp_map;
     std::vector<MapPoint::Ptr> candidate;
-    for (auto& allpoints: map_->map_points_) {
-        MapPoint::Ptr& p = allpoints.second;
+    for (auto& all_points: map_->map_points_) {
+        MapPoint::Ptr& p = all_points.second;
         // check if p in curr frame image
         if (curr_->isInFrame(p->pos_)) {
             // add to candidate
@@ -119,15 +109,13 @@ void VisualOdometer::featureMatching()
     matcher_flann_.match(desp_map, descriptor_curr_, matches );
 
     //-- Filter the matching point pairs
-    double min_dist = 10000, max_dist = 0;
+    double min_dist = 10000;
     // Find out the minimum distance and maximum distance between all matches
     // The distance between the most similar and the least similar two groups of points
-    for (int i = 0; i < descriptor_ref_.rows; ++i) {
+    for (int i = 0; i < descriptor_curr_.rows; ++i) {
         double dist = matches[i].distance;
         if (dist < min_dist)
             min_dist = dist;
-        if (dist > max_dist)
-            max_dist = dist;
     }
 
     match_3dpts_.clear();
@@ -169,13 +157,12 @@ void VisualOdometer::poseEstimationPnP()
 //        std::cout << "CV-R: " << std::endl << R_mat_cv << std::endl;
 //    std::cout << "Eigen-R: " << std::endl << R_mat << std::endl;
 //    std::cout << "t_vec: " << std::endl << t_vec << std::endl;
-    T_c_r_estimated_ = Sophus::SE3d(R_mat, t);
+    T_c_w_estimated_ = Sophus::SE3d(R_mat, t);
 
-    std::cout << "Calling bundle adjustment ... " << std::endl;
     auto* pose = new g2o::VertexSE3Expmap; // camera pose
     bundleAdjustment(pts_3d, pts_2d, pose, inliers);
 
-    T_c_r_estimated_ = Sophus::SE3d(
+    T_c_w_estimated_ = Sophus::SE3d(
             Eigen::Isometry3d(pose->estimate()).rotation(),
             Eigen::Isometry3d(pose->estimate()).translation()
     );
@@ -194,7 +181,7 @@ void VisualOdometer::bundleAdjustment(const std::vector<cv::Point3f>& points_3d,
     optimizer.setAlgorithm(solver);
 
     pose->setId(0);
-    pose->setEstimate(g2o::SE3Quat(T_c_r_estimated_.rotationMatrix(), T_c_r_estimated_.translation()));
+    pose->setEstimate(g2o::SE3Quat(T_c_w_estimated_.rotationMatrix(), T_c_w_estimated_.translation()));
     optimizer.addVertex(pose);
 
     // edges
@@ -224,28 +211,27 @@ void VisualOdometer::addKeyFrame()
             if ( d < 0 )
                 continue;
             Eigen::Vector3d p_world = ref_->camera_->pixel2world (
-                    Eigen::Vector2d ( keypoint_curr_[i].pt.x, keypoint_curr_[i].pt.y ), curr_->T_c_w_, d
+                Eigen::Vector2d ( keypoint_curr_[i].pt.x, keypoint_curr_[i].pt.y ), curr_->T_c_w_, d
             );
             Eigen::Vector3d n = p_world - ref_->getCamCenter();
             n.normalize();
             MapPoint::Ptr map_point = MapPoint::createMapPoint(
-                    p_world, n, descriptor_curr_.row(i).clone(), curr_.get()
+                p_world, n, descriptor_curr_.row(i).clone(), curr_.get()
             );
             map_->insertMapPoint( map_point );
         }
     }
-
     map_->insertKeyFrame ( curr_ );
     ref_ = curr_;
 }
 
 bool VisualOdometer::checkKeyFrame()
 {
-    Sophus::SE3d T_r_c = ref_->T_c_w_ * T_c_r_estimated_.inverse();
+    Sophus::SE3d T_r_c = ref_->T_c_w_ * T_c_w_estimated_.inverse();
     Sophus::Vector6d d = T_r_c.log();
     Eigen::Vector3d trans = d.head<3>();
     Eigen::Vector3d rot = d.tail<3>();
-    if ( rot.norm() >key_frame_min_rot || trans.norm() >key_frame_min_trans )
+    if (rot.norm() >key_frame_min_rot || trans.norm() >key_frame_min_trans)
         return true;
     return false;
 }
@@ -275,17 +261,16 @@ void VisualOdometer::addMapPoints()
     }
 }
 
-// result is not good
+// Optimize map size will cause an error, iter_ptr++ become null_ptr
 void VisualOdometer::optimizeMap()
 {
     // remove the hardly seen and no visible points 
     for ( auto iter = map_->map_points_.begin(); iter != map_->map_points_.end(); ++iter) {
-        if ( !curr_->isInFrame(iter->second->pos_) )
-        {
+        if (!curr_->isInFrame(iter->second->pos_)) {
             iter = map_->map_points_.erase(iter);
             continue;
         }
-        float match_ratio = float(iter->second->matched_times_)/iter->second->visible_times_;
+        float match_ratio = float(iter->second->matched_times_) / float(iter->second->visible_times_);
         if ( match_ratio < map_point_erase_ratio_ ) {
             iter = map_->map_points_.erase(iter);
             continue;
@@ -327,9 +312,8 @@ bool VisualOdometer::checkEstimatedPose()
         return false;
     }
     // If the motion is too large, it is probably wrong
-    Sophus::Vector6d d = T_c_r_estimated_.log();
-    if ( d.norm() > 5.0 )
-    {
+    Sophus::Vector6d d = T_c_w_estimated_.log();
+    if (d.norm() > 5.0){
         std::cout << "Reject because motion is too large: " << d.norm() << std::endl;
         return false;
     }

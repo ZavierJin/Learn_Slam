@@ -33,18 +33,14 @@ public:
 
     cv::Mat                         K_;                 // camera instinct matrix
     cv::Ptr<cv::ORB>                orb_;               // orb detector and computer
-//    std::vector<cv::Point3f>        pts_3d_ref_;        // 3D points in reference frame, never used
     std::vector<cv::KeyPoint>       keypoint_curr_;     // keypoint in current frame
-    std::vector<cv::KeyPoint>       keypoint_ref_;      // keypoint in reference frame, new add
     cv::Mat                         descriptor_curr_;   // descriptor in current frame
-    cv::Mat                         descriptor_ref_;    // descriptor in reference frame
-//    std::vector<cv::DMatch>         feature_matches_;
 
     cv::FlannBasedMatcher           matcher_flann_;     // flann matcher
     std::vector<MapPoint::Ptr>      match_3dpts_;       // matched 3d points
     std::vector<int>                match_2dkp_index_;  // matched 2d pixels (index of kp_curr)
 
-    Sophus::SE3d    T_c_r_estimated_;       // the estimated pose of current frame
+    Sophus::SE3d    T_c_w_estimated_;       // the estimated pose of current frame
     int             num_inliers_;           // number of inlier features in icp
     int             num_lost_;              // number of lost times
 
