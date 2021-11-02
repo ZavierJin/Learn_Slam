@@ -11,6 +11,8 @@ Slam and cpp practice repository
 - Visual Odometer, feature matching, 2D-2D, 3D-2D, 3D-3D
 - Slam Frontend Project Structure, two frame visual odometer, with local map
 - Backend optimization
+- Loop closure, DBow3
+- 
 
 ## Reference
 
