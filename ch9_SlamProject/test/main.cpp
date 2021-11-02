@@ -92,10 +92,10 @@ void twoFrameVisualOdometer()
             cv::circle(img_show, cv::Point2f(pixel ( 0,0 ),pixel (1,0)),
                        5, cv::Scalar ( 0,255,0 ), 2);
         }
-//        cv::imshow("Image", img_show );
-//        cv::waitKey(0);
-//        vis.setWidgetPose( "Camera", M);
-//        vis.spinOnce(10, false);
+        cv::imshow("Image", img_show );
+        cv::waitKey(0);
+        vis.setWidgetPose( "Camera", M);
+        vis.spinOnce(10, false);
     }
 }
 

@@ -14,20 +14,17 @@ class Frame;
 class MapPoint
 {
 
-
 public:
-    typedef std::shared_ptr<MapPoint> Ptr;
-    unsigned long      id_;        // ID
-    static unsigned long factory_id_;    // factory id
-    bool        good_;      // wheter a good point
-    Eigen::Vector3d     pos_;               // Position in world
-    Eigen::Vector3d     norm_;              // Normal of viewing direction
-    cv::Mat             descriptor_;        // Descriptor for matching
-
-    std::list<Frame*>    observed_frames_;   // key-frames that can observe this point
-
-    int         matched_times_;     // being an inliner in pose estimation
-    int         visible_times_;     // being visible in current frame
+    typedef std::shared_ptr<MapPoint>   Ptr;
+    unsigned long           id_;                // ID
+    static unsigned long    factory_id_;        // factory id
+    bool                    good_;              // whether a good point
+    Eigen::Vector3d         pos_;               // Position in world
+    Eigen::Vector3d         norm_;              // Normal of viewing direction
+    cv::Mat                 descriptor_;        // Descriptor for matching
+    std::list<Frame*>       observed_frames_;   // key-frames that can observe this point
+    int                     matched_times_;     // being an inliner in pose estimation
+    int                     visible_times_;     // being visible in current frame
 
 public:
     MapPoint(): id_(-1), pos_(Eigen::Vector3d(0,0,0)), norm_(Eigen::Vector3d(0,0,0)),
