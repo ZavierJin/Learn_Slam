@@ -12,7 +12,7 @@ Slam and cpp practice repository
 - Slam Frontend Project Structure, two frame visual odometer, with local map
 - Backend optimization
 - Loop closure, DBow3
-- 
+- Map, Octomap
 
 ## Reference
 
